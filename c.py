@@ -1,6 +1,6 @@
 import psycopg2, csv, time
 #
-# This script reads data from the intermediate text csv file created by xxxx
+# This script reads data from the intermediate text csv file created by b.py
 # and writes it to a table inside a postgres database
 # Credit to Chad Cooper/NBI 
 #

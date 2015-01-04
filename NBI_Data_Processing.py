@@ -3,10 +3,10 @@ import BS_Scrape as bs
 
 def FetchCSV( inStates, directory ):
     """ Fetches NBI bridge data """
-    url = 'http://www.fhwa.dot.gov/bridge/nbi/2010/'
+    url = 'http://www.fhwa.dot.gov/bridge/nbi/2013/'
     for state in inStates:
-	KillObject(os.path.join(directory, state + '10.txt'))
- 	urllib.urlretrieve(url + state + '10.txt', os.path.join(directory, state + '10.txt'))
+	KillObject(os.path.join(directory, state + '13.txt'))
+ 	urllib.urlretrieve(url + state + '13.txt', os.path.join(directory, state + '13.txt'))
 
 def KillObject( object ):
     """ Kills an input object """
@@ -138,8 +138,12 @@ def PushNbiToFeatureclass( inFc, inList, fields ):
 
 if __name__ == '__main__':
     try:
-        directory_in = 'C:/temp/python/data/inputs'
-        directory_out = 'C:/temp/python/data/outputs'
+        if os.name == 'posix':
+	    directory_in = '~/Documents/GIS/temp/python/data/inputs'
+	    directory_out = '~/Documents/GIS/temp/python/data/outputs'
+        else:
+  	    directory_in = 'C:/temp/python/data/inputs'
+            directory_out = 'C:/temp/python/data/outputs'
 	# our spatial reference, this can be copied from a prj file
 	sr = 'GEOGCS["GCS_North_American_1927",DATUM["D_North_American_1927",SPHEROID["Clarke_1866",6378206.4,294.9786982]],\
 	      PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]'
@@ -151,7 +155,7 @@ if __name__ == '__main__':
 		  ['LAT','DOUBLE','0','Latitude'],
 		  ['LON','DOUBLE','0','Longitude'],
 		  ['YEAR_BUILT','TEXT','4','Year Bridge Was Construted']]
-	files = ['ar','ok']
+	files = ['ca','ok']
 	# Fetch data files
 	FetchCSV( files, directory_in )
 	# Create our new file geodatabase to work with
@@ -164,7 +168,7 @@ if __name__ == '__main__':
 	stateDict = bs.FetchFipsCodes( )
 	## Push csv to table
 	for f in files:
-	    k = ParseNbiFile( os.path.join(directory_in, f + '10.txt'), stateDict )
+	    k = ParseNbiFile( os.path.join(directory_in, f + '13.txt'), stateDict )
 	    PushNbiToTable( os.path.join(directory_out, 'NBI.gdb/NbiTest'), k , fields)
 	    PushNbiToFeatureclass( os.path.join(directory_out, 'NBI.gdb/Bridges/NbiBridges'), k, fields)
 	print 'Done'

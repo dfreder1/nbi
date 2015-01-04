@@ -1,12 +1,16 @@
-import BeautifulSoup as bs
-import urllib2, re
+import bs4 as bs
+import urllib2, re, os
 
 def FetchFipsCodes( ):
-    """ Fetches a table of FIPS codes form a EPA webpage and tosses them
+    """ Fetches a table of FIPS codes from an EPA webpage and tosses them
         into a dictionary """
     url = 'http://www.epa.gov/enviro/html/codes/state.html'
-    f = open('C:/temp/python/data/outputs/fips.csv', 'w')
-    
+    if os.name == 'posix':
+	dir = os.path.dirname(__file__)
+	filename = os.path.join(dir, '../Documents/GIS/temp/python/data/outputs/fips.csv')
+        f = open(filename, 'w')
+    else:
+        f = open('C:/temp/python/data/outputs/fips.csv', 'w')
     # Fetch and parse the web page
     response = urllib2.urlopen(url)
     html = response.read()

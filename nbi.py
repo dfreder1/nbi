@@ -1,10 +1,11 @@
-import sys, traceback, Dictionaries, arcgisscripting, GpModules, csv, time
+import sys, traceback, Dictionaries, psycopg2, csv, time
+# need to find a module that will create a geospatial database within python for now do it outside and connect to it
 import locale
 locale.setlocale(locale.LC_ALL,'')
 
 start = time.clock()
 
-gp = arcgisscripting.create()
+# gp = arcgisscripting.create()
 
 flds = [['STATE','TEXT','20','State Name'],
 ['STRUC_NO','TEXT','17','Structure Number'],
@@ -349,8 +350,49 @@ def create_gdb_table( db, table, fields ):
     table:  Name of table we want to create
     fields:  List containing fields and size/type information
     """
-    GpModules.KillObject(db + '/' + table)
-    gp.CreateTable(db,table)
+    #    GpModules.KillObject(db + '/' + table)
+    # need to kill the db table if it already exists
+    # Connect to an existing database
+    conn = psycopg2.connect("dbname=db user=postgres")
+    # Open a cursor to perform database operations
+    cur = conn.cursor()
+    # Execute a command: this creates a new table
+    cur.execute("CREATE TABLE table (id serial PRIMARY KEY);")
+    for field in fields:
+        if field[1] == 'TEXT':
+            gp.AddField_management(db + '/' + table,field[0],field[1],"#","#",
+               field[2],field[3],"NULLABLE","NON_REQUIRED","#")
+        else:
+            gp.AddField_management(db + '/' + table,field[0],field[1],"#","#",
+               "#",field[3],"NULLABLE","NON_REQUIRED","#")
+
+# Pass data to fill a query placeholders and let Psycopg perform
+# the correct conversion (no more SQL injections!)
+>>> cur.execute("INSERT INTO test (num, data) VALUES (%s, %s)",
+		...      (100, "abc'def"))
+
+# Query the database and obtain data as Python objects
+>>> cur.execute("SELECT * FROM test;")
+>>> cur.fetchone()
+(1, 100, "abc'def")
+
+# Make the changes to the database persistent
+>>> conn.commit()
+
+# Close communication with the database
+>>> cur.close()
+>>> conn.close()
+
+
+
+
+
+
+
+
+
+
+gp.CreateTable(db,table)
     for field in fields:
         if field[1] == 'TEXT':
             gp.AddField_management(db + '/' + table,field[0],field[1],"#","#",
@@ -360,13 +402,20 @@ def create_gdb_table( db, table, fields ):
                "#",field[3],"NULLABLE","NON_REQUIRED","#")
 
 def main():
-    rfile = open('//fayfiler/seecoapps/GIS/Projects/Bridges/NBI/AR07.txt') \
+
+    if os.name == 'posix':
+        rfile = open('~/Documents/GIS/temp/python/data/inputs/ca07.txt').read().splitlines()  # raw input file
+        wfile = open('//fayfiler/seecoapps/GIS/Projects/Bridges/NBI/AR07rw.txt','w')  # rewritten output file
+        count = len(open('//fayfiler/seecoapps/GIS/Projects/Bridges/NBI/AR07.txt','rU').readlines())
+        print 'No. of lines -->',count
+    else:
+        rfile = open('//fayfiler/seecoapps/GIS/Projects/Bridges/NBI/AR07.txt') \
             .read().splitlines()  # raw input file
-    wfile = open('//fayfiler/seecoapps/GIS/Projects/Bridges/NBI/AR07rw.txt', 
+        wfile = open('//fayfiler/seecoapps/GIS/Projects/Bridges/NBI/AR07rw.txt', 
             'w')  # rewritten output file
-    count = len(open('//fayfiler/seecoapps/GIS/Projects/Bridges/NBI/AR07.txt',
+        count = len(open('//fayfiler/seecoapps/GIS/Projects/Bridges/NBI/AR07.txt',
             'rU').readlines())
-    print 'No. of lines -->',count
+        print 'No. of lines -->',count
 
     try:
         for line in rfile:
@@ -552,13 +601,17 @@ def main():
             
             wfile.write(newline)
         wfile.close()
-
-        create_gdb_table( 'C:/Testing/Testing.gdb', 'ArBridges', flds )
         
-        rows = gp.InsertCursor('C:/Testing/Testing.gdb/ArBridges')
-        gdbFlds = [j[0] for j in flds]
-        reader = csv.reader(open('F:/GIS/Projects/Bridges/NBI/AR07rw.txt',
-                            'rU'))
+	if os.name == 'posix':	
+            create_gdb_table( '../Documents/GIS/NBI/data/output', 'CaBridges', flds )
+            rows = gp.InsertCursor('../Documents/GIS/NBI/data/output/CaBridges')
+            gdbFlds = [j[0] for j in flds]
+            reader = csv.reader(open('../Documents/GIS/NBI/CA12_delim.txt','rU'))
+        else:
+            create_gdb_table( 'C:/Testing/Testing.gdb', 'ArBridges', flds )
+            rows = gp.InsertCursor('C:/Testing/Testing.gdb/ArBridges')
+            gdbFlds = [j[0] for j in flds]
+            reader = csv.reader(open('F:/GIS/Projects/Bridges/NBI/AR07rw.txt','rU'))
         ln=0
         for line in reader:
             #print str(line)
